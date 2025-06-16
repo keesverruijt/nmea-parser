@@ -616,6 +616,7 @@ impl CargoType {
             17 | 27 | 47 | 67 | 77 | 87 | 97 => CargoType::Reserved7,
             18 | 28 | 48 | 68 | 78 | 88 | 98 => CargoType::Reserved8,
             19 | 29 | 49 | 69 | 79 | 89 | 99 => CargoType::Reserved9,
+            30..=39 | 50..=59  => CargoType::Undefined,
             _ => {
                 warn!("Unexpected ship and cargo type: {}", raw);
                 CargoType::Undefined
@@ -665,6 +666,7 @@ pub enum PositionFixType {
     IntegratedNavigationSystem = 6, // 6
     Surveyed = 7,                   // 7
     Galileo = 8,                    // 8
+    InternalGNSS = 15,              // 15
 }
 
 impl PositionFixType {
@@ -679,6 +681,7 @@ impl PositionFixType {
             6 => PositionFixType::IntegratedNavigationSystem,
             7 => PositionFixType::Surveyed,
             8 => PositionFixType::Galileo,
+            15 => PositionFixType::InternalGNSS,
             _ => {
                 warn!("Unrecognized position fix type: {}", raw);
                 PositionFixType::Undefined
@@ -705,6 +708,7 @@ impl core::fmt::Display for PositionFixType {
             }
             PositionFixType::Surveyed => write!(f, "surveyed"),
             PositionFixType::Galileo => write!(f, "Galileo"),
+            PositionFixType::InternalGNSS => write!(f, "internal GNSS"),
         }
     }
 }
