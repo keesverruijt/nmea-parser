@@ -44,6 +44,7 @@ use hashbrown::HashMap;
 use core::cmp::max;
 use core::str::FromStr;
 
+#[allow(unused_imports)]
 #[cfg(not(test))]
 use num_traits::float::FloatCore;
 
