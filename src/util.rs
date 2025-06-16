@@ -342,14 +342,13 @@ pub fn parse_valid_utc(
     sec: u32,
     nano: u32,
 ) -> Result<DateTime<Utc>, ParseError> {
-    let opt_utc = Utc
-        .ymd_opt(year, month, day)
-        .and_hms_nano_opt(hour, min, sec, nano);
+    let opt_utc = NaiveDate::from_ymd_opt(year, month, day)
+        .and_then(|d| d.and_hms_nano_opt(hour, min, sec, nano))
+        .map(|d| d.and_utc());
+
     match opt_utc {
-        chrono::LocalResult::Single(valid_utc) | chrono::LocalResult::Ambiguous(valid_utc, _) => {
-            Ok(valid_utc)
-        }
-        chrono::LocalResult::None => Err(format!(
+        Some(valid_utc) => Ok(valid_utc),
+        None => Err(format!(
             "Failed to parse Utc Date from y:{} m:{} d:{} h:{} m:{} s:{}",
             year, month, day, hour, min, sec
         )
@@ -381,7 +380,9 @@ pub(crate) fn parse_latitude_ddmm_mmm(
 
     let n = match lat_string.parse::<f64>() {
         Ok(n) => n,
-        Err(_) => { return Err(format!("Failed to parse latitude (DDMM.MMM) from {}", lat_string).into()); }
+        Err(_) => {
+            return Err(format!("Failed to parse latitude (DDMM.MMM) from {}", lat_string).into());
+        }
     };
     let d = (n / 100.).floor();
     let m = n - d * 100.;
@@ -410,7 +411,11 @@ pub(crate) fn parse_longitude_dddmm_mmm(
 
     let n = match lon_string.parse::<f64>() {
         Ok(n) => n,
-        Err(_) => { return Err(format!("Failed to parse longitude (DDDMM.MMM) from {}", lon_string).into()); }
+        Err(_) => {
+            return Err(
+                format!("Failed to parse longitude (DDDMM.MMM) from {}", lon_string).into(),
+            );
+        }
     };
 
     // Extract
@@ -726,23 +731,75 @@ mod test {
 
     #[test]
     fn test_parse_latitude_ddmm_mmm() {
-        assert::close(parse_latitude_ddmm_mmm("1033.333", "N").unwrap().unwrap(), 10.55555, 1e-9);
-        assert::close(parse_latitude_ddmm_mmm("1033.3333", "N").unwrap().unwrap(), 10.555555, 1e-9);
-        assert::close(parse_latitude_ddmm_mmm("533.333", "N").unwrap().unwrap(), 5.55555, 1e-9);
-        assert::close(parse_latitude_ddmm_mmm("033.333", "N").unwrap().unwrap(), 0.55555, 1e-9);
-        assert::close(parse_latitude_ddmm_mmm("0.333", "N").unwrap().unwrap(), 0.00555, 1e-9);
-        assert::close(parse_latitude_ddmm_mmm("0.", "N").unwrap().unwrap(), 0.0, 1e-9);
+        assert::close(
+            parse_latitude_ddmm_mmm("1033.333", "N").unwrap().unwrap(),
+            10.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_latitude_ddmm_mmm("1033.3333", "N").unwrap().unwrap(),
+            10.555555,
+            1e-9,
+        );
+        assert::close(
+            parse_latitude_ddmm_mmm("533.333", "N").unwrap().unwrap(),
+            5.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_latitude_ddmm_mmm("033.333", "N").unwrap().unwrap(),
+            0.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_latitude_ddmm_mmm("0.333", "N").unwrap().unwrap(),
+            0.00555,
+            1e-9,
+        );
+        assert::close(
+            parse_latitude_ddmm_mmm("0.", "N").unwrap().unwrap(),
+            0.0,
+            1e-9,
+        );
         assert!(parse_latitude_ddmm_mmm(".", "N").is_err());
     }
 
     #[test]
     fn test_parse_longitude_dddmm_mmm() {
-        assert::close(parse_longitude_dddmm_mmm("10033.333", "N").unwrap().unwrap(), 100.55555, 1e-9);
-        assert::close(parse_longitude_dddmm_mmm("1033.3333", "N").unwrap().unwrap(), 10.555555, 1e-9);
-        assert::close(parse_longitude_dddmm_mmm("533.333", "N").unwrap().unwrap(), 5.55555, 1e-9);
-        assert::close(parse_longitude_dddmm_mmm("033.333", "N").unwrap().unwrap(), 0.55555, 1e-9);
-        assert::close(parse_longitude_dddmm_mmm("0.333", "N").unwrap().unwrap(), 0.00555, 1e-9);
-        assert::close(parse_longitude_dddmm_mmm("0.", "N").unwrap().unwrap(), 0., 1e-9);
+        assert::close(
+            parse_longitude_dddmm_mmm("10033.333", "N")
+                .unwrap()
+                .unwrap(),
+            100.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_longitude_dddmm_mmm("1033.3333", "N")
+                .unwrap()
+                .unwrap(),
+            10.555555,
+            1e-9,
+        );
+        assert::close(
+            parse_longitude_dddmm_mmm("533.333", "N").unwrap().unwrap(),
+            5.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_longitude_dddmm_mmm("033.333", "N").unwrap().unwrap(),
+            0.55555,
+            1e-9,
+        );
+        assert::close(
+            parse_longitude_dddmm_mmm("0.333", "N").unwrap().unwrap(),
+            0.00555,
+            1e-9,
+        );
+        assert::close(
+            parse_longitude_dddmm_mmm("0.", "N").unwrap().unwrap(),
+            0.,
+            1e-9,
+        );
         assert!(parse_longitude_dddmm_mmm(".", "N").is_err());
     }
 
